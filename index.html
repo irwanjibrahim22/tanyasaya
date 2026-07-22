@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tanya Dokumen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<style>
+:root{
+  --paper:#FBFAF6; --panel:#F3F0E9; --ink:#1B2230; --slate:#5A6472;
+  --rule:#E4E0D6; --marigold:#E0982E; --marigold-soft:#FBF2DF;
+  --ink-blue:#2C4A6E; --ink-blue-soft:#EAF0F6; --danger:#B04A32; --ok:#4a9d5b;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--paper);color:var(--ink);
+  display:flex;justify-content:center;-webkit-font-smoothing:antialiased}
+.app{width:100%;max-width:780px;height:100dvh;display:flex;flex-direction:column}
+
+header{padding:22px 26px 16px;border-bottom:1px solid var(--rule);
+  display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.brand h1{font-family:'Newsreader',serif;font-weight:600;font-size:26px;letter-spacing:-0.01em;line-height:1}
+.brand h1 em{color:var(--marigold);font-style:italic}
+.brand p{margin-top:5px;font-size:12.5px;color:var(--slate)}
+.badge{flex-shrink:0;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;
+  padding:5px 10px;border-radius:999px;background:var(--ink);color:var(--paper)}
+.tools{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.kb-chip{display:none;align-items:center;gap:7px;background:var(--panel);border:1px solid var(--rule);
+  border-radius:999px;padding:6px 12px;font-size:12px;color:var(--slate)}
+.kb-chip.show{display:flex}
+.kb-chip .dot{width:7px;height:7px;border-radius:50%;background:var(--ok)}
+.key-btn{border:1px solid var(--rule);background:var(--panel);border-radius:999px;padding:6px 12px;
+  font-size:12px;color:var(--slate);cursor:pointer;display:none;align-items:center;gap:6px}
+.key-btn.show{display:inline-flex}
+.key-btn .dot{width:7px;height:7px;border-radius:50%;background:var(--ok)}
+
+/* Key setup */
+.keybar{display:none;padding:16px 26px;background:var(--marigold-soft);border-bottom:1px solid var(--rule)}
+.keybar.show{display:block}
+.keybar h3{font-family:'Newsreader',serif;font-weight:500;font-size:16px;margin-bottom:4px}
+.keybar p{font-size:12.5px;color:var(--slate);line-height:1.5;margin-bottom:11px}
+.keybar p a{color:var(--ink-blue);font-weight:500}
+.keyrow{display:flex;gap:8px}
+.keyrow input{flex:1;border:1px solid var(--rule);border-radius:10px;padding:10px 13px;
+  font-family:inherit;font-size:13.5px;background:var(--paper);color:var(--ink)}
+.keyrow input:focus{outline:none;border-color:var(--ink-blue)}
+.keyrow button{border:none;background:var(--ink);color:var(--paper);font-family:'Newsreader',serif;
+  font-size:14px;border-radius:10px;padding:0 18px;cursor:pointer}
+.remember{display:flex;align-items:center;gap:7px;margin-top:10px;font-size:12px;color:var(--slate);cursor:pointer}
+.remember input{accent-color:var(--marigold)}
+
+/* Status / chat */
+.status{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:40px 30px;color:var(--slate);font-size:14px;line-height:1.6}
+.status.show{display:flex}.status.hide{display:none}
+.status .big{font-family:'Newsreader',serif;font-size:34px;color:var(--marigold);line-height:1;margin-bottom:14px}
+.status code{background:var(--panel);border:1px solid var(--rule);border-radius:6px;padding:2px 7px;font-size:12.5px;color:var(--ink)}
+
+.chat{flex:1;overflow-y:auto;padding:24px 26px 8px;display:none;flex-direction:column;gap:18px}
+.chat.show{display:flex}
+.msg{max-width:90%;font-size:14.5px;line-height:1.6}
+.msg.user{align-self:flex-end;background:var(--ink-blue-soft);border:1px solid #DBE4EE;
+  border-radius:14px 14px 4px 14px;padding:11px 15px}
+.msg.bot{align-self:flex-start;border-left:3px solid var(--marigold);background:var(--marigold-soft);
+  border-radius:4px 14px 14px 14px;padding:11px 15px 12px}
+.msg.bot .who{font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--marigold);margin-bottom:5px}
+.msg p{white-space:pre-wrap}.msg.bot p{color:#3a3226}
+.thinking{display:flex;gap:5px;align-items:center;padding:2px 0}
+.thinking span{width:6px;height:6px;border-radius:50%;background:var(--marigold);animation:blink 1.2s infinite}
+.thinking span:nth-child(2){animation-delay:.2s}.thinking span:nth-child(3){animation-delay:.4s}
+@keyframes blink{0%,80%,100%{opacity:.25}40%{opacity:1}}
+.fade{animation:fade .25s ease}@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+.bar{padding:14px 20px calc(14px + env(safe-area-inset-bottom));border-top:1px solid var(--rule);
+  display:none;gap:10px;align-items:flex-end}
+.bar.show{display:flex}
+.bar textarea{flex:1;resize:none;border:1px solid var(--rule);border-radius:12px;padding:11px 14px;
+  font-family:inherit;font-size:14.5px;color:var(--ink);background:var(--paper);max-height:130px;line-height:1.5}
+.bar textarea:focus{outline:none;border-color:var(--ink-blue)}
+.send{flex-shrink:0;border:none;background:var(--ink);color:var(--paper);font-family:'Newsreader',serif;
+  font-size:15px;border-radius:12px;padding:0 18px;height:44px;cursor:pointer;transition:background .15s}
+.send:hover{background:var(--ink-blue)}.send:disabled{opacity:.4;cursor:not-allowed}
+
+/* ===== ADMIN ===== */
+.admin{flex:1;overflow-y:auto;padding:22px 26px 40px;display:none;flex-direction:column;gap:18px}
+.admin.show{display:flex}
+.admin .lead{font-size:13px;color:var(--slate);line-height:1.6}
+.admin .lead code{background:var(--panel);border:1px solid var(--rule);border-radius:6px;padding:2px 6px;font-size:12px;color:var(--ink)}
+.drop{border:1.5px dashed var(--rule);border-radius:14px;padding:30px 24px;background:var(--panel);
+  cursor:pointer;text-align:center;transition:border-color .18s,background .18s}
+.drop:hover,.drop.drag{border-color:var(--marigold);background:var(--marigold-soft)}
+.drop .glyph{font-family:'Newsreader',serif;font-size:34px;color:var(--marigold);line-height:1}
+.drop h2{font-family:'Newsreader',serif;font-weight:500;font-size:18px;margin:10px 0 4px}
+.drop p{font-size:12.5px;color:var(--slate)}
+.doclist{display:flex;flex-direction:column;gap:10px}
+.doc{border:1px solid var(--rule);border-radius:12px;padding:13px 15px;background:var(--paper)}
+.doc .top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.doc .nm{font-weight:500;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.doc .rm{border:none;background:none;color:var(--danger);font-size:12px;cursor:pointer;flex-shrink:0}
+.doc .rm:hover{text-decoration:underline}
+.doc .meta{font-size:12px;color:var(--slate);margin-top:5px}
+.doc .meta.warn{color:var(--marigold)}
+.doc .ocr{margin-top:10px;border:none;background:var(--ink);color:var(--paper);font-family:'Newsreader',serif;
+  font-size:12.5px;border-radius:8px;padding:8px 13px;cursor:pointer}
+.doc .ocr:disabled{opacity:.55;cursor:not-allowed}
+.doc .prog{height:5px;background:#eadfce;border-radius:5px;margin-top:9px;overflow:hidden;display:none}
+.doc .prog.show{display:block}.doc .prog i{display:block;height:100%;width:0;background:var(--marigold);transition:width .2s}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
+.btn{border:none;font-family:'Newsreader',serif;font-size:14px;border-radius:10px;padding:11px 18px;cursor:pointer}
+.btn.primary{background:var(--ink);color:var(--paper)}.btn.primary:hover{background:var(--ink-blue)}
+.btn.primary:disabled{opacity:.4;cursor:not-allowed}
+.btn.ghost{background:var(--panel);color:var(--ink);border:1px solid var(--rule)}
+.savehint{font-size:12.5px;color:var(--slate);line-height:1.6;background:var(--ink-blue-soft);
+  border:1px solid #DBE4EE;border-radius:10px;padding:12px 14px;display:none}
+.savehint.show{display:block}.savehint b{color:var(--ink)}
+
+.note{font-size:12px;color:var(--danger);padding:0 26px 8px;display:none}.note.show{display:block}
+input[type=file]{display:none}
+::-webkit-scrollbar{width:8px}::-webkit-scrollbar-thumb{background:var(--rule);border-radius:8px}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">
+      <h1>Tanya <em>Dokumen</em></h1>
+      <p id="sub">Pangkalan pengetahuan pejabat</p>
+    </div>
+    <div class="tools">
+      <span class="badge" id="adminBadge" style="display:none">Admin</span>
+      <div class="kb-chip" id="kbChip"><span class="dot"></span><span id="kbCount"></span></div>
+      <button class="key-btn" id="keyBtn"><span class="dot"></span>Key</button>
+    </div>
+  </header>
+
+  <!-- Key (mod pengguna) -->
+  <div class="keybar" id="keybar">
+    <h3>Masukkan Gemini API key</h3>
+    <p>Percuma, tiada kad kredit. Dapatkan di <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio →</a></p>
+    <div class="keyrow">
+      <input id="keyInput" type="password" placeholder="Tampal API key di sini" autocomplete="off">
+      <button id="keySave">Simpan</button>
+    </div>
+    <label class="remember"><input type="checkbox" id="rememberKey" checked> Ingat key di peranti ini</label>
+  </div>
+
+  <!-- Mod pengguna -->
+  <div class="status show" id="status"><div class="spinner">Memuatkan…</div></div>
+  <div class="note" id="note"></div>
+  <div class="chat" id="chat"></div>
+  <div class="bar" id="bar">
+    <textarea id="input" rows="1" placeholder="Tanya tentang dokumen…"></textarea>
+    <button class="send" id="send">Hantar</button>
+  </div>
+
+  <!-- Mod admin -->
+  <div class="admin" id="admin">
+    <p class="lead">Naikkan beberapa PDF. App akan ekstrak teks (dan OCR untuk imbasan). Bila siap, klik <b>Muat turun kandungan.json</b> dan letak fail itu dalam repo GitHub anda. Hanya anda boleh commit, jadi hanya anda boleh ubah kandungan.</p>
+    <div class="drop" id="drop">
+      <div class="glyph">＋</div>
+      <h2>Seret PDF ke sini</h2>
+      <p>atau klik untuk pilih (boleh pilih banyak sekaligus)</p>
+    </div>
+    <div class="doclist" id="doclist"></div>
+    <div class="actions">
+      <button class="btn primary" id="download" disabled>Muat turun kandungan.json</button>
+      <button class="btn ghost" id="loadExisting">Muat kandungan.json sedia ada</button>
+    </div>
+    <div class="savehint" id="savehint">
+      <b>Langkah seterusnya:</b> letak <code>kandungan.json</code> yang dimuat turun ke dalam repo GitHub anda (folder yang sama dengan <code>index.html</code>), kemudian commit. Selepas beberapa minit, pengguna akan dapat kandungan terkini.
+    </div>
+  </div>
+</div>
+
+<input type="file" id="file" accept="application/pdf" multiple>
+<input type="file" id="jsonFile" accept="application/json">
+
+<script>
+/* ===================== TETAPAN ===================== */
+// Kunci Gemini untuk kegunaan DALAMAN tanpa perlu setiap orang tampal key.
+// AMARAN: fail di GitHub Pages boleh dicapai orang luar. Guna key percuma sahaja
+// (tiada bil), dan hanya untuk audience dalaman. Kalau mahu lebih selamat,
+// biarkan kosong -> setiap rakan tampal key sekali (diingat pada peranti mereka).
+const GEMINI_KEY = "";
+const MODEL = "gemini-flash-latest";      // alias Flash stabil terkini
+const KB_URL = "kandungan.json";          // fail pangkalan pengetahuan dalam repo
+const MAX_TOTAL = 300000;                 // had jumlah aksara dihantar ke AI
+/* =================================================== */
+
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+const $ = id => document.getElementById(id);
+const isAdmin = new URLSearchParams(location.search).has("admin");
+
+let apiKey = GEMINI_KEY;
+let KB = { docs: [] };     // pangkalan pengetahuan (mod pengguna)
+let history = [];          // perbualan {role, parts:[{text}]}
+
+/* ============ MOD ADMIN ============ */
+if (isAdmin){
+  $("adminBadge").style.display = "inline-block";
+  $("sub").textContent = "Mod admin · sedia kandungan";
+  $("status").classList.add("hide");
+  $("admin").classList.add("show");
+  initAdmin();
+} else {
+  initUser();
+}
+
+/* ===================================================
+   MOD PENGGUNA
+   =================================================== */
+async function initUser(){
+  // Key
+  try{ const s=localStorage.getItem("gemini_key"); if(!apiKey && s) apiKey=s; }catch(e){}
+  if(apiKey) $("keyBtn").classList.add("show");
+  $("keySave").onclick=()=>{
+    const v=$("keyInput").value.trim(); if(!v) return;
+    apiKey=v;
+    if($("rememberKey").checked){ try{localStorage.setItem("gemini_key",v);}catch(e){} }
+    $("keybar").classList.remove("show"); $("keyBtn").classList.add("show");
+  };
+  $("keyBtn").onclick=()=>{ $("keyInput").value=""; $("keybar").classList.toggle("show"); };
+
+  // Muat pangkalan pengetahuan
+  try{
+    const res=await fetch(KB_URL, {cache:"no-store"});
+    if(!res.ok) throw new Error("tiada fail");
+    const data=await res.json();
+    if(!data.docs || !data.docs.length) throw new Error("kosong");
+    KB=data;
+    showReady();
+  }catch(e){
+    $("status").innerHTML =
+      `<div class="big">¶</div><div>Pangkalan pengetahuan belum disediakan.<br>` +
+      `Admin: buka halaman ini dengan <code>?admin</code> di hujung URL untuk sediakan dokumen.</div>`;
+  }
+}
+
+function showReady(){
+  const n=KB.docs.length;
+  $("kbCount").textContent = n+" dokumen";
+  $("kbChip").classList.add("show");
+  $("status").classList.remove("show"); $("status").classList.add("hide");
+  $("chat").classList.add("show"); $("bar").classList.add("show");
+  const names = KB.docs.map(d=>d.name).join(", ");
+  addBot(`Sedia. Saya boleh jawab berdasarkan ${n} dokumen: ${names}. Silakan tanya apa-apa.`);
+  $("input").focus();
+}
+
+// Hantar soalan
+$("send").onclick=ask;
+$("input").addEventListener("keydown",e=>{ if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();ask();} });
+$("input").addEventListener("input",()=>{ const t=$("input"); t.style.height="auto"; t.style.height=Math.min(t.scrollHeight,130)+"px"; });
+
+function buildSystem(){
+  let ctx = KB.docs.map(d=>`=== DOKUMEN: ${d.name} ===\n${d.text}`).join("\n\n");
+  if(ctx.length>MAX_TOTAL) ctx=ctx.slice(0,MAX_TOTAL);
+  return `Anda pembantu yang menjawab HANYA berdasarkan dokumen di bawah. `+
+    `Jawab dalam Bahasa Melayu, ringkas dan tepat. `+
+    `Jika jawapan tiada dalam dokumen, katakan "Maklumat itu tidak dijumpai dalam dokumen." `+
+    `Bila berkaitan, nyatakan dari dokumen mana jawapan diambil.\n\n${ctx}`;
+}
+
+async function ask(){
+  const t=$("input"), q=t.value.trim(), send=$("send");
+  if(!q||send.disabled) return;
+  if(!apiKey){ $("keybar").classList.add("show"); $("keyInput").focus(); return; }
+  t.value=""; t.style.height="auto";
+  addUser(q);
+  history.push({role:"user",parts:[{text:q}]});
+
+  const think=addThinking(); send.disabled=true;
+  try{
+    const res=await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=`+encodeURIComponent(apiKey),
+      { method:"POST", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ system_instruction:{parts:[{text:buildSystem()}]}, contents:history }) });
+    const data=await res.json();
+    if(!res.ok){
+      think.remove();
+      const m=data?.error?.message||"";
+      if(res.status===400&&/api key/i.test(m)) addBot("API key tidak sah. Klik butang \"Key\" di atas untuk masukkan semula.");
+      else if(res.status===429) addBot("Kuota percuma dicapai sementara. Cuba lagi sebentar.");
+      else addBot("Ralat API: "+(m||res.status));
+      history.pop(); send.disabled=false; return;
+    }
+    const parts=data?.candidates?.[0]?.content?.parts||[];
+    const ans=parts.map(p=>p.text||"").join("").trim()||"Maaf, tiada jawapan diterima.";
+    history.push({role:"model",parts:[{text:ans}]});
+    think.remove(); addBot(ans);
+  }catch(err){ think.remove(); addBot("Maaf, ralat sambungan. Semak internet dan cuba lagi."); history.pop(); console.error(err); }
+  finally{ send.disabled=false; $("input").focus(); }
+}
+
+function addUser(t){const el=document.createElement("div");el.className="msg user fade";el.innerHTML="<p></p>";el.querySelector("p").textContent=t;$("chat").appendChild(el);sd();}
+function addBot(t){const el=document.createElement("div");el.className="msg bot fade";el.innerHTML='<div class="who">Jawapan</div><p></p>';el.querySelector("p").textContent=t;$("chat").appendChild(el);sd();}
+function addThinking(){const el=document.createElement("div");el.className="msg bot fade";el.innerHTML='<div class="who">Jawapan</div><div class="thinking"><span></span><span></span><span></span></div>';$("chat").appendChild(el);sd();return el;}
+function sd(){$("chat").scrollTop=$("chat").scrollHeight;}
+function showNote(m){$("note").textContent=m;$("note").classList.toggle("show",!!m);}
+
+/* ===================================================
+   MOD ADMIN
+   =================================================== */
+let adminDocs = [];   // {name, pages, text, needOcr:[...], pdf}
+
+function initAdmin(){
+  const drop=$("drop");
+  drop.onclick=()=>$("file").click();
+  $("file").onchange=e=>{ const files=[...e.target.files]; e.target.value=""; addFiles(files); };
+  ["dragover","dragenter"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add("drag")}));
+  ["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove("drag")}));
+  drop.addEventListener("drop",e=>{ addFiles([...e.dataTransfer.files]); });
+
+  $("download").onclick=downloadKB;
+  $("loadExisting").onclick=()=>$("jsonFile").click();
+  $("jsonFile").onchange=async e=>{
+    const f=e.target.files[0]; if(!f) return;
+    try{
+      const data=JSON.parse(await f.text());
+      (data.docs||[]).forEach(d=>adminDocs.push({name:d.name,pages:d.pages||0,text:d.text||"",needOcr:[],pdf:null}));
+      renderDocs();
+    }catch(err){ alert("Fail JSON tidak sah."); }
+    $("jsonFile").value="";
+  };
+}
+
+async function addFiles(files){
+  for(const f of files){
+    if(f.type!=="application/pdf") continue;
+    const entry={name:f.name,pages:0,text:"",needOcr:[],pdf:null};
+    adminDocs.push(entry);
+    renderDocs();
+    try{
+      const pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;
+      entry.pdf=pdf; entry.pages=pdf.numPages;
+      const pageTexts=[]; const need=[];
+      for(let i=1;i<=pdf.numPages;i++){
+        const c=await (await pdf.getPage(i)).getTextContent();
+        const t=c.items.map(it=>it.str).join(" ").trim();
+        pageTexts.push(t);
+        if(t.replace(/\s/g,"").length<15) need.push(i);
+      }
+      entry._pageTexts=pageTexts; entry.needOcr=need;
+      entry.text=pageTexts.join("\n").replace(/\s+\n/g,"\n").trim();
+      renderDocs();
+    }catch(err){ entry.error=true; renderDocs(); console.error(err); }
+  }
+}
+
+function renderDocs(){
+  const list=$("doclist"); list.innerHTML="";
+  adminDocs.forEach((d,idx)=>{
+    const el=document.createElement("div"); el.className="doc";
+    let meta, metaClass="";
+    if(d.error){ meta="Gagal dibaca."; metaClass="warn"; }
+    else if(!d.pdf && !d.text){ meta="Membaca…"; }
+    else if(d.needOcr && d.needOcr.length){ meta=`${d.pages} halaman · ${d.needOcr.length} halaman imej perlu OCR`; metaClass="warn"; }
+    else{ meta=`${d.pages} halaman · ${d.text.length.toLocaleString()} aksara teks`; }
+    el.innerHTML=
+      `<div class="top"><span class="nm">${escapeHtml(d.name)}</span>`+
+      `<button class="rm" data-i="${idx}">Buang</button></div>`+
+      `<div class="meta ${metaClass}">${meta}</div>`+
+      (d.needOcr && d.needOcr.length && d.pdf ? `<button class="ocr" data-i="${idx}">Jalankan OCR (${d.needOcr.length} halaman)</button>
+        <div class="prog" data-p="${idx}"><i></i></div>`:"");
+    list.appendChild(el);
+  });
+  list.querySelectorAll(".rm").forEach(b=>b.onclick=()=>{ adminDocs.splice(+b.dataset.i,1); renderDocs(); refreshDownload(); });
+  list.querySelectorAll(".ocr").forEach(b=>b.onclick=()=>runOcr(+b.dataset.i,b));
+  refreshDownload();
+}
+
+function refreshDownload(){
+  const ready=adminDocs.length && adminDocs.every(d=>d.text && d.text.length);
+  $("download").disabled=!ready;
+}
+
+async function runOcr(idx,btn){
+  const d=adminDocs[idx]; if(!d.pdf) return;
+  if(typeof Tesseract==="undefined"){ alert("Enjin OCR tidak dapat dimuat. Muat turun fail ini dan buka di pelayar."); return; }
+  btn.disabled=true; btn.textContent="Sedang OCR…";
+  const prog=btn.parentElement.querySelector(".prog"); const bar=prog.querySelector("i"); prog.classList.add("show");
+  let worker;
+  try{
+    worker=await Tesseract.createWorker("eng+msa",1,{logger:m=>{ if(m.status==="recognizing text") bar.style.width=Math.round((m.progress||0)*100)+"%"; }});
+    for(let j=0;j<d.needOcr.length;j++){
+      const pnum=d.needOcr[j]; btn.textContent=`OCR ${j+1}/${d.needOcr.length}…`; bar.style.width="0%";
+      const page=await d.pdf.getPage(pnum);
+      const vp=page.getViewport({scale:2});
+      const cv=document.createElement("canvas"); cv.width=vp.width; cv.height=vp.height;
+      await page.render({canvasContext:cv.getContext("2d"),viewport:vp}).promise;
+      const {data:{text}}=await worker.recognize(cv);
+      d._pageTexts[pnum-1]=(d._pageTexts[pnum-1]?d._pageTexts[pnum-1]+"\n":"")+(text||"").trim();
+    }
+    await worker.terminate();
+    d.text=d._pageTexts.join("\n").replace(/\s+\n/g,"\n").trim();
+    d.needOcr=[];
+    renderDocs();
+  }catch(err){
+    console.error(err); if(worker){try{await worker.terminate();}catch(e){}}
+    btn.disabled=false; btn.textContent="Cuba lagi"; alert("OCR gagal. Cuba muat turun fail dan buka di pelayar.");
+  }
+}
+
+function downloadKB(){
+  const kb={ updated:new Date().toISOString(),
+    docs:adminDocs.filter(d=>d.text&&d.text.length).map(d=>({name:d.name,pages:d.pages,text:d.text})) };
+  const blob=new Blob([JSON.stringify(kb,null,1)],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="kandungan.json"; a.click();
+  URL.revokeObjectURL(a.href);
+  $("savehint").classList.add("show");
+}
+
+function escapeHtml(s){return s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+</script>
+</body>
+</html>
